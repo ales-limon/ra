@@ -146,7 +146,7 @@
     id="visor"
     alt="Stand de prueba en 3D"
     camera-controls
-    touch-action="pan-y"
+    touch-action="none"
     auto-rotate
     auto-rotate-delay="1200"
     rotation-per-second="14deg"
@@ -223,7 +223,11 @@
   }
 
   visor.addEventListener('load', () => {
-    decir('Modelo cargado. Arrastra para girar, rueda para acercar.', 'ok');
+    // Los gestos no se adivinan, y no son los mismos con dedos que con raton.
+    const tactil = matchMedia('(pointer: coarse)').matches;
+    decir(tactil
+      ? 'Un dedo gira · dos dedos mueven · pellizca para acercar. Dentro de la AR, gira con dos dedos en espiral.'
+      : 'Arrastra para girar · rueda para acercar.', 'ok');
     // Las dimensiones reales confirman que la escala del GLB es la que crees.
     const c = visor.getDimensions ? visor.getDimensions() : null;
     if (c) {
