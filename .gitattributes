@@ -1,0 +1,9 @@
+# Los modelos 3D son binarios: si git les normaliza saltos de linea, quedan
+# corruptos y el visor falla con un error de parseo poco obvio.
+*.glb  binary
+*.gltf binary
+*.usdz binary
+*.bin  binary
+
+# El resto, normalizado a LF en el repo.
+* text=auto
