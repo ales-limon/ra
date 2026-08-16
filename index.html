@@ -108,6 +108,22 @@
     padding: 2px 6px;
     border-radius: 4px;
   }
+  .tamanos { display: flex; gap: 8px; align-items: center; }
+  .tamanos button {
+    background: transparent;
+    color: var(--tinta-tenue);
+    border: 1px solid var(--borde);
+    border-radius: 999px;
+    padding: 6px 14px;
+    font-size: 13px;
+    cursor: pointer;
+  }
+  .tamanos button[aria-pressed="true"] {
+    background: var(--acento);
+    border-color: var(--acento);
+    color: #fff;
+  }
+
   .zona-suelta {
     border: 1px dashed var(--borde);
     border-radius: 6px;
@@ -138,12 +154,12 @@
     shadow-softness="0.7"
     exposure="1.05"
     environment-image="neutral"
-    camera-orbit="35deg 72deg 9m"
-    min-camera-orbit="auto auto 2m"
-    max-camera-orbit="auto 88deg 25m"
+    camera-orbit="35deg 72deg auto"
+    min-camera-orbit="auto auto auto"
+    max-camera-orbit="auto 88deg auto"
     ar
     ar-modes="webxr scene-viewer quick-look"
-    ar-scale="fixed">
+    ar-scale="auto">
 
     <div class="barra-ar" slot="ar-button">
       <button type="button">Ver en tu espacio (AR)</button>
@@ -154,7 +170,11 @@
 </main>
 
 <footer>
-  <span>Parametro: <code>?src=ruta.glb</code></span>
+  <span class="tamanos">
+    Tamano:
+    <button type="button" data-modelo="models/stand-demo.glb"    data-medida="3 m">Real</button>
+    <button type="button" data-modelo="models/stand-maqueta.glb" data-medida="15 cm">Maqueta 1:20</button>
+  </span>
   <label class="zona-suelta" id="zona">
     Arrastra aqui otro .glb para probarlo
     <input type="file" id="archivo" accept=".glb,.gltf,model/gltf-binary">
@@ -226,6 +246,19 @@
 
   document.getElementById('archivo')
     .addEventListener('change', (e) => desdeArchivo(e.target.files[0]));
+
+  // Selector de tamano. Son modelos distintos, no un escalado en el visor: en
+  // AR el telefono planta el modelo con las medidas que trae dentro, asi que
+  // achicarlo aqui no cambiaria nada al pasar a realidad aumentada.
+  const botones = document.querySelectorAll('.tamanos button');
+
+  botones.forEach(b => b.addEventListener('click', () => {
+    botones.forEach(o => o.setAttribute('aria-pressed', String(o === b)));
+    cargar(b.dataset.modelo, b.dataset.modelo + '  ·  ' + b.dataset.medida + ' de frente');
+  }));
+
+  // Marcar el que corresponda al modelo con el que arranca la pagina.
+  botones.forEach(b => b.setAttribute('aria-pressed', String(b.dataset.modelo === inicial)));
 
   ['dragenter', 'dragover'].forEach(t =>
     document.addEventListener(t, e => { e.preventDefault(); zona.classList.add('encima'); }));

@@ -22,12 +22,30 @@ AR: eso solo aparece en celular.
 | Ruta | Qué es |
 | --- | --- |
 | `index.html` | El visor. Recibe el modelo por `?src=ruta.glb` |
-| `models/stand-demo.glb` | Stand dummy para Android y web, 2.8 KB |
-| `models/stand-demo.usdz` | El mismo stand para iPhone (Quick Look), 9.3 KB |
+| `models/stand-demo.*` | Stand a tamaño real: 3 m de frente |
+| `models/stand-maqueta.*` | El mismo stand a 1:20: 15 cm de frente |
 | `tools/stand-piezas.php` | Medidas, materiales y piezas. Fuente única de los dos generadores |
-| `tools/make-stand-glb.php` | Genera el GLB |
-| `tools/make-stand-usdz.php` | Genera el USDZ, incluido el ZIP alineado a 64 bytes |
+| `tools/make-stand-glb.php` | Genera el GLB (Android y web) |
+| `tools/make-stand-usdz.php` | Genera el USDZ (iPhone), incluido el ZIP alineado a 64 bytes |
+| `tools/inspect-glb.php` | Reporta la caja envolvente de un GLB, para comprobar escalas |
 | `vendor/model-viewer.min.js` | Librería de Google, servida local (sin CDN) |
+
+## Escalas
+
+El segundo argumento de los generadores es el factor. `1` da tamaño real y
+`0.05` la maqueta 1:20:
+
+```
+php tools/make-stand-glb.php  models/stand-maqueta.glb  0.05
+php tools/make-stand-usdz.php models/stand-maqueta.usdz 0.05
+```
+
+Son modelos distintos a propósito, no un escalado en el visor: al pasar a AR
+el teléfono planta el modelo con las medidas que trae dentro del archivo, así
+que encogerlo en pantalla no cambiaría nada.
+
+Aparte, `ar-scale="auto"` deja que el usuario ajuste el tamaño con los dedos
+dentro de la AR. Con `"fixed"` queda clavado a escala real.
 
 El visor busca el `.usdz` solo: toma el `src`, le cambia la extensión y lo pasa
 como `ios-src`. Si el gemelo no existe, el iPhone muestra el 3D sin botón de

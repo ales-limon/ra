@@ -39,8 +39,11 @@ $offPos = 0;
 $offNor = strlen($posBin);
 $offIdx = $offNor + strlen($norBin);
 
+// Segundo argumento: factor de escala. 1 = tamano real, 0.05 = maqueta 1:20.
+$factor = isset($argv[2]) ? (float) $argv[2] : 1.0;
+
 $materiales = stand_materiales();
-$piezas     = stand_piezas();
+$piezas     = stand_piezas($factor);
 
 $gltf = [
     'asset'       => ['version' => '2.0', 'generator' => 'StandHouse dummy stand generator'],

@@ -36,10 +36,17 @@ function stand_materiales(): array
     ];
 }
 
-/** Piezas del stand: [material, escala (ancho, alto, fondo), centro (x, y, z)]. */
-function stand_piezas(): array
+/**
+ * Piezas del stand: [material, escala (ancho, alto, fondo), centro (x, y, z)].
+ *
+ * El factor reduce el stand entero manteniendo las proporciones. A 1 sale a
+ * tamano real (3 m de frente); a 0.05 sale una maqueta de 15 cm, que es lo que
+ * cabe en un escritorio. Se escala tambien el centro de cada pieza: si solo se
+ * escalaran los tamanos, las piezas quedarian flotando separadas.
+ */
+function stand_piezas(float $factor = 1.0): array
 {
-    return [
+    $piezas = [
         ['piso',       [3.00, 0.08, 2.00], [ 0.00, 0.04,  0.00]],
         ['muro',       [3.00, 2.40, 0.08], [ 0.00, 1.20, -0.96]],
         ['muro',       [0.08, 2.40, 2.00], [-1.46, 1.20,  0.00]],
@@ -47,4 +54,16 @@ function stand_piezas(): array
         ['acento',     [1.20, 0.90, 0.50], [ 0.55, 0.45,  0.60]],  // mostrador
         ['estructura', [0.10, 2.40, 0.10], [ 1.46, 1.20,  0.96]],  // poste
     ];
+
+    if ($factor === 1.0) {
+        return $piezas;
+    }
+
+    return array_map(function (array $p) use ($factor): array {
+        return [
+            $p[0],
+            array_map(fn($v) => $v * $factor, $p[1]),
+            array_map(fn($v) => $v * $factor, $p[2]),
+        ];
+    }, $piezas);
 }

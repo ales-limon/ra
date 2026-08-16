@@ -38,9 +38,12 @@ function vec(array $v): string
 // directamente en sus vertices, en vez de usar Xform anidados: menos supuestos
 // sobre el orden en que cada visor aplica escala y traslacion.
 // ---------------------------------------------------------------------------
+// Segundo argumento: factor de escala. 1 = tamano real, 0.05 = maqueta 1:20.
+$factor = isset($argv[2]) ? (float) $argv[2] : 1.0;
+
 $caras      = stand_caras();
 $materiales = stand_materiales();
-$piezas     = stand_piezas();
+$piezas     = stand_piezas($factor);
 
 $usda  = "#usda 1.0\n(\n";
 $usda .= "    defaultPrim = \"Stand\"\n";
@@ -180,8 +183,10 @@ function usdz_empaquetar(array $archivos, string $destino): array
     return $informe;
 }
 
-// El archivo USD debe ir primero dentro del paquete.
-$informe = usdz_empaquetar(['stand-demo.usda' => $usda], $destino);
+// El archivo USD debe ir primero dentro del paquete, y se nombra como el
+// paquete para que inspeccionarlo no confunda una variante con otra.
+$interno = pathinfo($destino, PATHINFO_FILENAME) . '.usda';
+$informe = usdz_empaquetar([$interno => $usda], $destino);
 
 printf("USDZ escrito: %s (%d bytes)\n", realpath($destino), filesize($destino));
 printf("USDA interno: %d bytes, %d mallas\n", strlen($usda), count($piezas));
