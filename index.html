@@ -1,0 +1,225 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>StandHouse · visor 3D de prueba</title>
+
+<!-- Libreria local, sin CDN. Es un modulo ES: el type="module" no es opcional. -->
+<script type="module" src="vendor/model-viewer.min.js"></script>
+
+<style>
+  /* -------------------------------------------------------------------
+     AJUSTES: esto es lo que vas a mover al calibrar.
+     ------------------------------------------------------------------- */
+  :root {
+    --modelo-por-defecto: "models/stand-demo.glb";
+    --tinta:      #e8e6e3;
+    --tinta-tenue:#8a8681;
+    --fondo:      #16181c;
+    --panel:      #1e2127;
+    --borde:      #2e323a;
+    --acento:     #c74a0d;
+  }
+
+  * { box-sizing: border-box; }
+
+  body {
+    margin: 0;
+    min-height: 100vh;
+    background: var(--fondo);
+    color: var(--tinta);
+    font: 15px/1.5 system-ui, -apple-system, "Segoe UI", sans-serif;
+    display: flex;
+    flex-direction: column;
+  }
+
+  header {
+    padding: 14px 18px;
+    border-bottom: 1px solid var(--borde);
+    display: flex;
+    align-items: baseline;
+    gap: 12px;
+    flex-wrap: wrap;
+  }
+  header h1 { margin: 0; font-size: 16px; font-weight: 600; letter-spacing: .01em; }
+  header .ruta {
+    font-family: ui-monospace, "Cascadia Code", Consolas, monospace;
+    font-size: 12px;
+    color: var(--tinta-tenue);
+    word-break: break-all;
+  }
+
+  main { flex: 1; display: flex; min-height: 0; }
+
+  model-viewer {
+    flex: 1;
+    min-height: 60vh;
+    background: radial-gradient(ellipse at 50% 35%, #23272e 0%, #131519 70%);
+    --poster-color: transparent;
+  }
+
+  /* Estados: solo uno visible a la vez, lo controla el JS de abajo. */
+  #estado {
+    position: absolute;
+    inset: auto 0 0 0;
+    padding: 10px 18px;
+    font-size: 13px;
+    background: rgba(0,0,0,.55);
+    border-top: 1px solid var(--borde);
+    backdrop-filter: blur(6px);
+  }
+  #estado[data-tono="error"] { color: #ff9c7a; }
+  #estado[data-tono="ok"]    { color: #9fd68a; }
+
+  .barra-ar {
+    position: absolute;
+    bottom: 56px;
+    left: 50%;
+    transform: translateX(-50%);
+  }
+  .barra-ar button {
+    background: var(--acento);
+    color: #fff;
+    border: 0;
+    border-radius: 999px;
+    padding: 11px 22px;
+    font-size: 14px;
+    font-weight: 600;
+    cursor: pointer;
+    box-shadow: 0 4px 18px rgba(0,0,0,.45);
+  }
+
+  footer {
+    padding: 12px 18px;
+    border-top: 1px solid var(--borde);
+    background: var(--panel);
+    font-size: 13px;
+    color: var(--tinta-tenue);
+    display: flex;
+    gap: 22px;
+    flex-wrap: wrap;
+    align-items: center;
+  }
+  footer code {
+    font-family: ui-monospace, "Cascadia Code", Consolas, monospace;
+    color: var(--tinta);
+    background: #14161a;
+    padding: 2px 6px;
+    border-radius: 4px;
+  }
+  .zona-suelta {
+    border: 1px dashed var(--borde);
+    border-radius: 6px;
+    padding: 7px 14px;
+    cursor: pointer;
+  }
+  .zona-suelta.encima { border-color: var(--acento); color: var(--tinta); }
+  input[type=file] { display: none; }
+</style>
+</head>
+<body>
+
+<header>
+  <h1>Visor 3D de prueba</h1>
+  <span class="ruta" id="ruta-actual">—</span>
+</header>
+
+<main style="position:relative">
+  <model-viewer
+    id="visor"
+    alt="Stand de prueba en 3D"
+    camera-controls
+    touch-action="pan-y"
+    auto-rotate
+    auto-rotate-delay="1200"
+    rotation-per-second="14deg"
+    shadow-intensity="1.1"
+    shadow-softness="0.7"
+    exposure="1.05"
+    environment-image="neutral"
+    camera-orbit="35deg 72deg 9m"
+    min-camera-orbit="auto auto 2m"
+    max-camera-orbit="auto 88deg 25m"
+    ar
+    ar-modes="webxr scene-viewer quick-look"
+    ar-scale="fixed">
+
+    <div class="barra-ar" slot="ar-button">
+      <button type="button">Ver en tu espacio (AR)</button>
+    </div>
+  </model-viewer>
+
+  <div id="estado">Cargando modelo…</div>
+</main>
+
+<footer>
+  <span>Parametro: <code>?src=ruta.glb</code></span>
+  <label class="zona-suelta" id="zona">
+    Arrastra aqui otro .glb para probarlo
+    <input type="file" id="archivo" accept=".glb,.gltf,model/gltf-binary">
+  </label>
+  <span id="datos"></span>
+</footer>
+
+<script>
+(function () {
+  const visor  = document.getElementById('visor');
+  const estado = document.getElementById('estado');
+  const ruta   = document.getElementById('ruta-actual');
+  const datos  = document.getElementById('datos');
+  const zona   = document.getElementById('zona');
+
+  const POR_DEFECTO = 'models/stand-demo.glb';
+
+  function decir(texto, tono) {
+    estado.textContent = texto;
+    if (tono) { estado.dataset.tono = tono; } else { delete estado.dataset.tono; }
+  }
+
+  // El modelo se elige por querystring, igual que hara /ar/ mas adelante.
+  const params  = new URLSearchParams(location.search);
+  const inicial = params.get('src') || POR_DEFECTO;
+
+  function cargar(url, etiqueta) {
+    ruta.textContent = etiqueta || url;
+    datos.textContent = '';
+    decir('Cargando modelo…');
+    visor.src = url;
+  }
+
+  visor.addEventListener('load', () => {
+    decir('Modelo cargado. Arrastra para girar, rueda para acercar.', 'ok');
+    // Las dimensiones reales confirman que la escala del GLB es la que crees.
+    const c = visor.getDimensions ? visor.getDimensions() : null;
+    if (c) {
+      datos.textContent =
+        `Medidas: ${c.x.toFixed(2)} × ${c.y.toFixed(2)} × ${c.z.toFixed(2)} m`;
+    }
+  });
+
+  visor.addEventListener('error', (ev) => {
+    const causa = (ev.detail && ev.detail.type) ? ev.detail.type : 'desconocida';
+    decir('No se pudo cargar el modelo (' + causa + '). Revisa la ruta y que se sirva por http, no file://', 'error');
+  });
+
+  // Cargar un .glb del disco sin subirlo a ningun lado: URL temporal en memoria.
+  function desdeArchivo(file) {
+    if (!file) return;
+    cargar(URL.createObjectURL(file), file.name + ' (local)');
+  }
+
+  document.getElementById('archivo')
+    .addEventListener('change', (e) => desdeArchivo(e.target.files[0]));
+
+  ['dragenter', 'dragover'].forEach(t =>
+    document.addEventListener(t, e => { e.preventDefault(); zona.classList.add('encima'); }));
+  ['dragleave', 'drop'].forEach(t =>
+    document.addEventListener(t, e => { e.preventDefault(); zona.classList.remove('encima'); }));
+  document.addEventListener('drop', e => desdeArchivo(e.dataTransfer.files[0]));
+
+  cargar(inicial);
+})();
+</script>
+</body>
+</html>
