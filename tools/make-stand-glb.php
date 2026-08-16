@@ -10,20 +10,13 @@
  * importan al montarlo sobre el marcador.
  */
 
+require __DIR__ . '/stand-piezas.php';
+
 $destino = $argv[1] ?? __DIR__ . '/../models/stand-demo.glb';
 
-// ---------------------------------------------------------------------------
 // Geometria: un cubo unitario centrado en el origen, reutilizado por todas las
 // piezas via escala/traslacion de cada nodo.
-// ---------------------------------------------------------------------------
-$caras = [
-    [[1, 0, 0],  [[.5,-.5,-.5], [.5,-.5,.5],  [.5,.5,.5],   [.5,.5,-.5]]],
-    [[-1, 0, 0], [[-.5,-.5,.5], [-.5,-.5,-.5],[-.5,.5,-.5], [-.5,.5,.5]]],
-    [[0, 1, 0],  [[-.5,.5,.5],  [.5,.5,.5],   [.5,.5,-.5],  [-.5,.5,-.5]]],
-    [[0, -1, 0], [[-.5,-.5,-.5],[.5,-.5,-.5], [.5,-.5,.5],  [-.5,-.5,.5]]],
-    [[0, 0, 1],  [[-.5,-.5,.5], [.5,-.5,.5],  [.5,.5,.5],   [-.5,.5,.5]]],
-    [[0, 0, -1], [[.5,-.5,-.5], [-.5,-.5,-.5],[-.5,.5,-.5], [.5,.5,-.5]]],
-];
+$caras = stand_caras();
 
 $posBin = '';
 $norBin = '';
@@ -46,28 +39,8 @@ $offPos = 0;
 $offNor = strlen($posBin);
 $offIdx = $offNor + strlen($norBin);
 
-// ---------------------------------------------------------------------------
-// Materiales. Colores planos y opacos: en AR sobre hoja impresa, los materiales
-// muy metalicos o muy oscuros se leen mal contra el fondo real.
-// ---------------------------------------------------------------------------
-$materiales = [
-    ['nombre' => 'piso',      'color' => [0.16, 0.17, 0.19, 1.0], 'metal' => 0.10, 'rug' => 0.90],
-    ['nombre' => 'muro',      'color' => [0.92, 0.91, 0.88, 1.0], 'metal' => 0.00, 'rug' => 0.85],
-    ['nombre' => 'acento',    'color' => [0.78, 0.28, 0.05, 1.0], 'metal' => 0.25, 'rug' => 0.55],
-    ['nombre' => 'estructura','color' => [0.42, 0.44, 0.47, 1.0], 'metal' => 0.85, 'rug' => 0.35],
-];
-
-// ---------------------------------------------------------------------------
-// Piezas del stand: [material, escala (ancho, alto, fondo), centro (x, y, z)]
-// ---------------------------------------------------------------------------
-$piezas = [
-    ['piso',       [3.00, 0.08, 2.00], [ 0.00, 0.04,  0.00]],
-    ['muro',       [3.00, 2.40, 0.08], [ 0.00, 1.20, -0.96]],
-    ['muro',       [0.08, 2.40, 2.00], [-1.46, 1.20,  0.00]],
-    ['acento',     [2.20, 0.45, 0.06], [ 0.00, 2.00, -0.90]],  // letrero en el muro
-    ['acento',     [1.20, 0.90, 0.50], [ 0.55, 0.45,  0.60]],  // mostrador
-    ['estructura', [0.10, 2.40, 0.10], [ 1.46, 1.20,  0.96]],  // poste de esquina
-];
+$materiales = stand_materiales();
+$piezas     = stand_piezas();
 
 $gltf = [
     'asset'       => ['version' => '2.0', 'generator' => 'StandHouse dummy stand generator'],
@@ -97,7 +70,8 @@ foreach ($materiales as $m) {
         'name' => $m['nombre'],
         'doubleSided' => true,
         'pbrMetallicRoughness' => [
-            'baseColorFactor' => $m['color'],
+            // glTF pide RGBA; la definicion compartida guarda solo RGB.
+            'baseColorFactor' => array_merge($m['color'], [1.0]),
             'metallicFactor'  => $m['metal'],
             'roughnessFactor' => $m['rug'],
         ],

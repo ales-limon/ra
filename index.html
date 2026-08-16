@@ -181,10 +181,24 @@
   const params  = new URLSearchParams(location.search);
   const inicial = params.get('src') || POR_DEFECTO;
 
-  function cargar(url, etiqueta) {
+  // iOS no abre AR con GLB: Safari usa Quick Look, que pide un .usdz gemelo.
+  // Por convencion vive junto al modelo, misma ruta y otra extension.
+  function gemeloUsdz(url) {
+    return /\.glb$/i.test(url) ? url.replace(/\.glb$/i, '.usdz') : null;
+  }
+
+  function cargar(url, etiqueta, usdz) {
     ruta.textContent = etiqueta || url;
     datos.textContent = '';
     decir('Cargando modelo…');
+
+    const ios = (usdz !== undefined) ? usdz : (params.get('ios') || gemeloUsdz(url));
+    if (ios) {
+      visor.setAttribute('ios-src', ios);
+    } else {
+      visor.removeAttribute('ios-src');   // sin gemelo, iPhone ve 3D pero no AR
+    }
+
     visor.src = url;
   }
 
@@ -206,7 +220,8 @@
   // Cargar un .glb del disco sin subirlo a ningun lado: URL temporal en memoria.
   function desdeArchivo(file) {
     if (!file) return;
-    cargar(URL.createObjectURL(file), file.name + ' (local)');
+    // Un archivo suelto del disco no trae gemelo .usdz: null, no undefined.
+    cargar(URL.createObjectURL(file), file.name + ' (local)', null);
   }
 
   document.getElementById('archivo')
